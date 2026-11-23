@@ -1,4 +1,9 @@
-
+//-----------------------------------------------------------------------------
+// priv grouped private-port interface -- instantiation template
+// One packed vector per functional face and direction.  Group widths are
+// configuration parameters; the per-pin adapter is generated per customer
+// configuration and is not part of the public package.
+//-----------------------------------------------------------------------------
 
 priv_bridge_grouped u_bridge (
     .client0_in                 (client0_in                ),

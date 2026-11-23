@@ -111,6 +111,16 @@ The switch configuration is held in `pcie_tlm::SwitchCfg` (see
 `SwitchCfg` additionally defines the broadcast window (`bc_base`, `bc_size`)
 and the multicast window (`mc_base`, `mc_stride`, 16 groups).
 
+Extended capabilities are exposed through a **traversable ECAP chain**: every
+enabled capability is linked by the header `Next` field from offset `0x100`.
+The first capability is SR-IOV when enabled, otherwise the standard Device
+Serial Number (0x0003) anchor.  Standard register faces include AER, VC (0x0002),
+DSN, ACS, ARI, ATS, SR-IOV, Multicast (0x0012), ReBAR, PASID, DPC (0x1B0),
+LTR, L1SS, PTM, DOE, SPE/Secondary PCIe (0x0019), Physical Layer 64 GT/s,
+Device 3, IDE, Flit Error Logging and Lane Margining.  The standard VC ECAP
+mirrors the model's TC/VC map and arbitration table; the private 0xE0/0xE4/0xF4
+VC registers and the standard block stay in sync.
+
 Routing rules:
 
 * Memory, IO, configuration and completion TLPs are classified per port.
@@ -223,7 +233,14 @@ behavior and are used for acceptance.
 ## 11. Scope and known boundaries
 
 * No PHY, DLL, LTSSM, credit management, or equalization: owned by the
-  downstream RTL.
+  downstream RTL.  SPE, Physical Layer 64 GT/s, IDE, Flit Error Logging and
+  Lane Margining are **configuration-space faces only**; link training,
+  equalization, IDE encryption/key/stream handling and flit replay are not
+  re-implemented in this model.
+* OBFF is **not** a PCIe extended capability; it is modeled through
+  DevCap2[19:18] / DevCtl2[14:13] and the OBFF message path.  DOE provides a
+  minimal mailbox (write/read loopback, ready/error/abort), not the full
+  DOE/SPDM/CMA object protocols.
 * The enumeration engine is recursive: a downstream port may attach an endpoint or
   another switch (nested windows, two-level broadcast/multicast verified).
 * The console covers configuration and routing. End-to-end data transfer,
