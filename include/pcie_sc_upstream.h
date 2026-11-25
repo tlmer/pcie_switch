@@ -50,6 +50,8 @@ struct RcModule : sc_core::sc_module {
     uint64_t up_memwr_rx = 0;
     uint64_t up_memwr_addr_last = 0;
     uint16_t up_memwr_reqid_last = 0;
+    uint64_t up_memwr_dwlen_last = 0;
+    uint8_t  up_memwr_fbe_last = 0, up_memwr_lbe_last = 0;
     std::vector<uint8_t> up_memwr_data_last;
     // -- * T49: Message face (root side) ------------------------------------------
     //   Send: root-port broadcast class (PME_Turn_Off r=011 etc.); receive: to-root class (r=000/101) => count + record by code.
