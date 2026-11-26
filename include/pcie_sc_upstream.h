@@ -15,6 +15,7 @@
 #include <systemc>
 #include <deque>
 #include <functional>
+#include <map>
 #include <memory>
 #include <vector>
 
@@ -53,6 +54,18 @@ struct RcModule : sc_core::sc_module {
     uint64_t up_memwr_dwlen_last = 0;
     uint8_t  up_memwr_fbe_last = 0, up_memwr_lbe_last = 0;
     std::vector<uint8_t> up_memwr_data_last;
+    // -- Route B B2: upstream non-posted **MemRd** (endpoint -> host) => model host memory => CplD --
+    //   The RC plays the host: it answers the read with a completion carrying the
+    //   host-memory dword(s).  Default read data is `host_rd_data`; per-address
+    //   overrides go in `host_mem` (tests preload known values).
+    uint64_t up_memrd_rx = 0, up_memrd_cpl_tx = 0;
+    uint64_t up_memrd_addr_last = 0;
+    uint16_t up_memrd_reqid_last = 0;
+    uint8_t  up_memrd_tag_last = 0;
+    uint64_t up_memrd_dwlen_last = 0;
+    uint32_t host_rd_data = 0xCAFEBABEu;
+    std::map<uint64_t, uint32_t> host_mem;
+    uint32_t host_read(uint64_t a) const;
     // -- * T49: Message face (root side) ------------------------------------------
     //   Send: root-port broadcast class (PME_Turn_Off r=011 etc.); receive: to-root class (r=000/101) => count + record by code.
     //   WARNING: semantics (PME_TO_Ack missing responses / ERR_* classification) in T49-2/T49-3 build on this counting face.
