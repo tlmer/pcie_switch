@@ -55,6 +55,15 @@ quit
   TC/VC map and arbitration table.
 * AER, PM/ASPM, FLR, ReBAR, ACS, ATS, PASID, 10-bit tag, VDM and atomic
   operations at the model level
+* Root-complex host-memory face for endpoint-originated traffic: posted
+  writes are stored (byte-addressed, link byte order, single- and multi-DW),
+  reads return CplDs from that store (or a default dword), reads outside the
+  backed window return UR, and MSI writes are matched against the IRQ table
+  (the enumerator owns the IRQ window; test vectors must be registered after
+  enumeration).  On real-DWC ports (`DspPortModule::radm_addr_reserved_low`)
+  incoming memory addresses are normalized to the PCIe `[63:2]` form — the
+  private port's `radm_trgt1_addr[1:0]` are header reserved bits; fake cores
+  keep exact (byte-granular MSI-X) addresses.
 * Private-port co-simulation bridge and `+NO_FSDB` diagnostics
 
 ## Boundaries
@@ -62,7 +71,9 @@ quit
 PHY, link training, equalization and flow control belong to the downstream RTL.
 SPE, Physical Layer 64 GT/s, IDE, Flit Error Logging and Lane Margining are
 configuration-space faces only; their link-training, encryption and flit-replay
-semantics are not re-implemented in the model.  This model does not expose an
+semantics are not re-implemented in the model.  The root-complex host memory is a model-side byte store in link byte order
+  (not an AXI4/DDR backend); the AXI4 host path lives in the separate VIP
+  co-simulation host.  This model does not expose an
 AXI4 interface in the switch package (the separate VIP co-simulation host has
 its own AXI4 model/pin path), does not provide a DTS template or an example
 program. See `USER_GUIDE.md` section 11 for details.

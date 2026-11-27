@@ -43,6 +43,13 @@ struct DspPortModule : sc_core::sc_module {
     //   `pig_DWC_pcie_core.sv:1502`; **unique non-zero per port** (user preset in mem2client0.v:144).
     //   NEVER give the host reqid (0) => the real core's client0 formation/completion LUT may not recognize it (D6 no-send suspect).
     uint16_t client0_id = 0;    // M6b: default 0 (internal testbench semantics); real-DUT TB presets via set_client0_id()
+    // -- Real-DWC private port: `radm_trgt1_addr[1:0]` are the TLP header's
+    //    **reserved** bits, not address bits (PCIe addresses are [63:2];
+    //    `pcie_posted_monitor.sv` masks them the same way).  Set true only
+    //    when this port is wired to the real core; the model-owned fake cores
+    //    pass exact addresses and (MSI-X) use byte-granular vector addresses,
+    //    so the default must stay false.
+    bool radm_addr_reserved_low = false;
     // -- Testbench injection modes (FI_*; FI_NONE = normal) / ignore halt (for falsification)
     int  fault = FI_NONE;
     bool ignore_halt = false;

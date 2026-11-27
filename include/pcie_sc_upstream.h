@@ -58,14 +58,27 @@ struct RcModule : sc_core::sc_module {
     //   The RC plays the host: it answers the read with a completion carrying the
     //   host-memory dword(s).  Default read data is `host_rd_data`; per-address
     //   overrides go in `host_mem` (tests preload known values).
-    uint64_t up_memrd_rx = 0, up_memrd_cpl_tx = 0;
+    uint64_t up_memrd_rx = 0, up_memrd_cpl_tx = 0, up_memrd_ur_tx = 0;
     uint64_t up_memrd_addr_last = 0;
     uint16_t up_memrd_reqid_last = 0;
     uint8_t  up_memrd_tag_last = 0;
     uint64_t up_memrd_dwlen_last = 0;
+    std::vector<uint8_t> up_memrd_data_last;       // bytes of the last CplD (empty for UR)
     uint32_t host_rd_data = 0xCAFEBABEu;
-    std::map<uint64_t, uint32_t> host_mem;
+    std::map<uint64_t, uint32_t> host_mem;         // per-dword defaults
+    // Host memory backing store: posted MemWr payload bytes are kept here and
+    // read back by upstream MemRd.  Window [host_lo, host_hi) gates the
+    // response: outside it the RC returns UR (host_hi <= host_lo => all backed).
+    std::map<uint64_t, uint8_t> host_bytes;
+    uint64_t host_lo = 0, host_hi = 0;
+    uint64_t up_memwr_stored = 0;                  // posted writes stored to host memory
+    uint64_t host_wr_sig = 1469598103934665603ULL; // byte/addr signatures for tests
+    uint64_t host_rd_sig = 1469598103934665603ULL;
+    bool host_in_window(uint64_t a) const {
+        return (host_hi <= host_lo) || (a >= host_lo && a < host_hi);
+    }
     uint32_t host_read(uint64_t a) const;
+    uint8_t  host_byte(uint64_t a) const;
     // -- * T49: Message face (root side) ------------------------------------------
     //   Send: root-port broadcast class (PME_Turn_Off r=011 etc.); receive: to-root class (r=000/101) => count + record by code.
     //   WARNING: semantics (PME_TO_Ack missing responses / ERR_* classification) in T49-2/T49-3 build on this counting face.

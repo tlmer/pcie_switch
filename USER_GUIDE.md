@@ -143,7 +143,8 @@ The main classes are declared in `include/pcie_sc_upstream.h` and
 `include/pcie_sc_edge.h`:
 
 * `RcModule` -- root complex model: `submit()`, `submit_memwr()`,
-  `submit_memrd()`, `cfg_read()`, `cfg_write()`.
+  `submit_memrd()`, `cfg_read()`, `cfg_write()`.  It also plays the host for
+  endpoint-originated traffic (see 7.1).
 * `CrossbarModule` -- routing engine: `up_in` / `up_out` FIFOs,
   `dn_in_port(i)` / `dn_out_port(i)` per downstream port, statistics counters.
 * `PcieScUpstream` -- root + upstream + crossbar assembled in one module.
@@ -159,6 +160,42 @@ The main classes are declared in `include/pcie_sc_upstream.h` and
 TLP representation is `pcie_tlm::PrivTlp` (`include/pcie_sc_wire.h`):
 `type`, `fmt`, `addr`, `reqid`, `tag`, `dw_len`, `first_be`, `last_be`,
 `payload`, `hv`/`dv`/`eot`.
+
+### 7.1 Root-complex host memory (endpoint -> host traffic)
+
+`RcModule` answers upstream non-posted memory reads and keeps a byte-addressed
+host store:
+
+* `host_rd_data` -- default dword returned for addresses without stored bytes
+  (default `0xCAFEBABE`).
+* `host_mem` -- per-dword read-only defaults (`std::map<uint64_t,uint32_t>`).
+* `host_bytes` -- byte store filled by endpoint **posted MemWr** payloads
+  (wire byte order, i.e. the first payload byte at the lowest address).
+* `host_lo` / `host_hi` -- backed window.  Reads inside return a CplD built
+  from `host_bytes`/`host_mem`/`host_rd_data`; reads outside return a **UR**
+  completion (status 1, no data).  `host_hi <= host_lo` disables the window
+  check (every address backed).
+* Counters: `up_memwr_rx` / `up_memwr_stored` (posted writes seen/stored),
+  `up_memrd_rx` / `up_memrd_cpl_tx` / `up_memrd_ur_tx` (reads, CplDs, URs),
+  plus `host_wr_sig` / `host_rd_sig` (byte/address signatures for tests that
+  write and read the same range).
+* Completions carry the request's requester ID and tag, a successful status,
+  the byte count, and the request address's low 7 bits as Lower Address; they
+  are routed by requester-ID bus through the crossbar to the originating
+  downstream port.
+* Real-DWC ports normalise memory addresses with `addr &= ~3` at the
+  private-port boundary (`DspPortModule::radm_addr_reserved_low = true`):
+  the DWC `radm_trgt1_addr[1:0]` carry the TLP header's reserved bits, not
+  address bits (PCIe addresses are `[63:2]`).  Fake cores leave the flag
+  false and keep exact addresses — the model's MSI-X entries use
+  byte-granular self-addresses, which a global mask would collapse.
+
+MSI is received through the same face: set `irq_base`/`irq_size` and
+`register_irq()` entries; a posted write to an entry's address (requester,
+vector and data matching) increments `irq_hits`.  Note that an enumerator run
+(`Enumerator::run`) **owns** this window: it assigns `irq_base`/`irq_size`
+and clears the table, so test-specific vectors must be registered after the
+tree walk and must fall inside the enumerator's window.
 
 ## 8. Private-port adapter
 
