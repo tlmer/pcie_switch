@@ -79,6 +79,22 @@ struct RcModule : sc_core::sc_module {
     }
     uint32_t host_read(uint64_t a) const;
     uint8_t  host_byte(uint64_t a) const;
+    // -- B8: upstream AtomicOp (endpoint -> host) => execute on the host store ---
+    //   FetchAdd/Swap: Length 1|2 DW => 4|8-byte value (payload = operand).
+    //   CAS: Length 2|4 DW => value = half the payload; payload = {compare | swap}.
+    //   Completion carries the ORIGINAL value (spec); outside the window => UR.
+    uint64_t up_atom_rx = 0, up_atom_fadd = 0, up_atom_swap = 0, up_atom_cas = 0;
+    uint64_t up_atom_cas_hit = 0, up_atom_ur = 0, up_atom_bad = 0, up_atom_cpl_tx = 0;
+    uint64_t up_atom_poison = 0;           // poisoned AtomicOp => UR (never executed)
+    uint64_t up_atom_addr_last = 0;
+    uint16_t up_atom_reqid_last = 0, up_atom_tag_last = 0;
+    uint8_t  up_atom_type_last = 0, up_atom_cpl_status_last = 0xFF;
+    std::vector<uint8_t> up_atom_old_last, up_atom_new_last;
+    // Red-mode fault injection for the B8 gate (testbench only; 0 = normal):
+    //   1 = ignore atomics (no execute, no completion)
+    //   2 = completion returns the NEW value instead of the original
+    //   3 = CAS writes the swap value even when the compare fails
+    int atom_fault = 0;
     // -- * T49: Message face (root side) ------------------------------------------
     //   Send: root-port broadcast class (PME_Turn_Off r=011 etc.); receive: to-root class (r=000/101) => count + record by code.
     //   WARNING: semantics (PME_TO_Ack missing responses / ERR_* classification) in T49-2/T49-3 build on this counting face.

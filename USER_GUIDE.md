@@ -197,6 +197,20 @@ vector and data matching) increments `irq_hits`.  Note that an enumerator run
 and clears the table, so test-specific vectors must be registered after the
 tree walk and must fall inside the enumerator's window.
 
+Endpoint-originated **AtomicOp** requests are executed by the root complex on
+the same host store: FetchAdd/Swap (Length 1|2 DW => 4/8-byte value; FetchAdd
+is little-endian integer addition **with carry**), CAS (Length 2|4 DW, payload
+= compare|swap, written only on a match).  The completion carries the
+**original** value (operand-size data, status SC); addresses outside the
+backed window (or short payloads) return **UR**.  Counters: `up_atom_rx`,
+`up_atom_fadd/swap/cas/cas_hit`, `up_atom_ur`, `up_atom_cpl_tx`; the last
+operation is recorded in `up_atom_old_last`/`up_atom_new_last`.  Illegal
+operand sizes/alignment are rejected by `mlf_check`
+(`MLF_ATOM_OPR`/`MLF_ATOM_ALIGN`).  Note: the shipped DWC configuration
+(`CX_ATOMIC_ENABLE`/`CX_ATOMIC_ROUTING_EN` = 0) does not route AtomicOp, so
+this is exercised by the model gates (TB-ATOM-RC) until a customer build
+enables atomic routing.
+
 ## 8. Private-port adapter
 
 The application side of the DWC private port is generated from two inputs:

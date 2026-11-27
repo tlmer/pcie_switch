@@ -80,9 +80,12 @@ program. See `USER_GUIDE.md` section 11 for details.
 
 ## Verification
 
-`sh tlm/run.sh` runs **30 gates = 30/30 PASS · 0 FAIL** (2026-11-22),
-including `TB-MC-ECAP 18/18` and `TB-ECAP-CHAIN 118/118`.  Evidence:
-`evidence/P137_ecap_chain_p0p4_20261122/` (`run_30.log`, `status.txt`).
+`sh tlm/run.sh` runs **31 gates = 31/31 PASS · 0 FAIL** (2026-11-27),
+including `TB-MC-ECAP 18/18`, `TB-ECAP-CHAIN 118/118` and the new
+`TB-ATOM-RC` (root-complex atomic execution, 11 green checks + 3 red
+modes).  Evidence: `evidence/P137_ecap_chain_p0p4_20261122/`
+(`run_30.log`, `status.txt`) and `evidence/P159_atom_rc_20261127/`
+(`run_31_gates.log`).
 
 ## Version
 

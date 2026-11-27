@@ -397,6 +397,11 @@ struct EpStubModule : sc_core::sc_module {
     uint64_t atomic_ops = 0, atomic_fadd = 0, atomic_swap = 0, atomic_cas = 0, atomic_cas_hit = 0;
     uint64_t atomic_req_blocked = 0;            // Request gate closed (DevCtl2[6]=0) => NOT sent (ledger)
     uint64_t atomic_req_sent = 0;
+    // Completions received at this endpoint (B8 EP->host atomic completions etc.).
+    uint64_t cpl_rx = 0;
+    uint16_t cpl_tag_last = 0;
+    uint8_t  cpl_status_last = 0xFF;
+    std::vector<uint8_t> cpl_data_last;
     // -- * T53 (C2): **CRS (not-ready window)** - EP-side "configuration not ready" semantics (programmable delay window) --------------
     //   Semantics (spec + RTL read; do NOT invent): when top inputs `app_req_retry_en` (line 481) /
     //   `app_pf_req_retry_en` (line 482) are enabled, the filter responds to **CFG0 (this port) requests** =>
